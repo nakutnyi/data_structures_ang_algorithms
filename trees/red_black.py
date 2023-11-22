@@ -6,6 +6,7 @@ with a few additional constraints:
 - If a node is red, then its children are black.
 - All paths from a node to its NIL descendants contain the same number of black nodes
 """
+from termcolor import colored
 
 
 BLACK = True
@@ -15,7 +16,7 @@ RED = False
 class MetaNil(type):
     """Just here to display Nil nicely"""
     def __str__(self):
-        return "NIL black"
+        return colored("NIL",  "black")
 
 
 class Nil(metaclass=MetaNil):
@@ -32,7 +33,8 @@ class Node:
         self.parent = None
 
     def __str__(self):
-        return f"{str(self.value).zfill(3)} {'red' if self.color == RED else 'black'}"
+        out = str(self.value).zfill(3)
+        return colored(out, "black") if self.color == BLACK else colored(out, "red")
 
 
 class RedBlackTree:
@@ -105,7 +107,14 @@ class RedBlackTree:
 
         self.fix_insert(new)
 
-    def fix_insert(self, new_node):
+    @staticmethod
+    def get_relatives(node):
+        parent = node.parent
+        grandparent = parent.parent
+
+        return parent, grandparent
+
+    def fix_insert(self, node):
         r"""
         The first scenario when new node is root is covered in the "insert" method
         Remaining three scenarios are covered here:
@@ -131,36 +140,39 @@ class RedBlackTree:
                   node         node
         """
 
-        while new_node != self.root and new_node.parent.color == RED:
-            if new_node.parent == new_node.parent.parent.right:
-                uncle = new_node.parent.parent.left
+        while node != self.root and node.parent.color == RED:
+            parent, grandparent = self.get_relatives(node)
+            if parent == grandparent.right:
+                uncle = grandparent.left
                 if uncle.color == RED:  # case 2
                     uncle.color = BLACK
-                    new_node.parent.color = BLACK
-                    new_node.parent.parent.color = RED
-                    new_node = new_node.parent.parent
+                    parent.color = BLACK
+                    grandparent.color = RED
+                    node = grandparent
                 else:
-                    if new_node == new_node.parent.left:      #  ‾|
-                        new_node = new_node.parent            #    > # case 3.1
-                        self.rotate_right(new_node)           #   |
-                    new_node.parent.color = BLACK             #   |  ‾|
-                    new_node.parent.parent.color = RED        #   |    > # case 4.1
-                    self.rotate_left(new_node.parent.parent)  #  _|  _|
+                    if node is parent.left:  #                             ‾|
+                        node = parent  #                                    |
+                        parent, grandparent = self.get_relatives(node)  #    > # case 3.1
+                        self.rotate_right(node)  #                          |
+                    parent.color = BLACK  #                                 |  ‾|
+                    grandparent.color = RED  #                              |    > # case 4.1
+                    self.rotate_left(grandparent)  #                       _|  _|
             else:
-                uncle = new_node.parent.parent.right
+                uncle = node.parent.parent.right
 
                 if uncle.color == RED:  # case 2
                     uncle.color = BLACK
-                    new_node.parent.color = BLACK
-                    new_node.parent.parent.color = RED
-                    new_node = new_node.parent.parent
+                    parent.color = BLACK
+                    grandparent.color = RED
+                    node = grandparent
                 else:
-                    if new_node == new_node.parent.right:      #  ‾|
-                        new_node = new_node.parent             #    > # case 3.2
-                        self.rotate_left(new_node)             #   |
-                    new_node.parent.color = BLACK                #   |  ‾|
-                    new_node.parent.parent.color = RED          #   |    > # case 4.2
-                    self.rotate_right(new_node.parent.parent)  #  _|  _|
+                    if node == parent.right:  #                           ‾|
+                        node = node.parent  #                              |
+                        parent, grandparent = self.get_relatives(node)  #   > # case 3.2
+                        self.rotate_left(node)  #                          |
+                    parent.color = BLACK  #                                |  ‾|
+                    grandparent.color = RED  #                             |    > # case 4.2
+                    self.rotate_right(grandparent)  #              _|  _|
         self.root.color = BLACK
 
     def display(self, node=None, last=True, header='', index=None):
