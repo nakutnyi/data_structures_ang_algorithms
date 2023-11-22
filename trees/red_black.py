@@ -149,7 +149,7 @@ class RedBlackTree:
                     parent.color = BLACK
                     grandparent.color = RED
                     node = grandparent
-                else:
+                elif uncle.color == BLACK:
                     if node is parent.left:  #                             ‾|
                         node = parent  #                                    |
                         parent, grandparent = self.get_relatives(node)  #    > # case 3.1
@@ -157,7 +157,7 @@ class RedBlackTree:
                     parent.color = BLACK  #                                 |  ‾|
                     grandparent.color = RED  #                              |    > # case 4.1
                     self.rotate_left(grandparent)  #                       _|  _|
-            else:
+            elif parent == grandparent.left:
                 uncle = node.parent.parent.right
 
                 if uncle.color == RED:  # case 2
@@ -165,14 +165,14 @@ class RedBlackTree:
                     parent.color = BLACK
                     grandparent.color = RED
                     node = grandparent
-                else:
+                elif uncle.color == BLACK:
                     if node == parent.right:  #                           ‾|
                         node = node.parent  #                              |
                         parent, grandparent = self.get_relatives(node)  #   > # case 3.2
                         self.rotate_left(node)  #                          |
                     parent.color = BLACK  #                                |  ‾|
                     grandparent.color = RED  #                             |    > # case 4.2
-                    self.rotate_right(grandparent)  #              _|  _|
+                    self.rotate_right(grandparent)  #                     _|  _|
         self.root.color = BLACK
 
     def display(self, node=None, last=True, header='', index=None):
@@ -239,7 +239,6 @@ class RedBlackTree:
         if y_orig_color == BLACK:
             self.delete_fixup(x)
 
-    # O(logn)
     def delete_fixup(self, x):
         while x != self.root and x.color == BLACK:
             if x == x.p.left:
@@ -304,22 +303,20 @@ class RedBlackTree:
             u.p.right = v
         v.p = u.p
 
-        # O(h) = O(logn) for RB trees
+    @staticmethod
+    def minimum(node):
+        while node.left is not Nil:
+            node = node.left
+        return node
 
-    def minimum(self, x):
-        while x.left != Nil:
-            x = x.left
-        return x
-
-    # O(h) = O(logn) for RB trees
-    def search(self, k):
-        x = self.root
-        while x != Nil and k != x.key:
-            if k < x.key:
-                x = x.left
+    def search(self, value):
+        current_node = self.root
+        while current_node is not Nil and value != current_node.value:
+            if value < current_node.value:
+                current_node = current_node.left
             else:
-                x = x.right
-        return x
+                current_node = current_node.right
+        return current_node
 
 
 tree = RedBlackTree()
