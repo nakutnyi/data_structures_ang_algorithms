@@ -8,6 +8,10 @@ with a few additional constraints:
 """
 
 
+BLACK = True
+RED = False
+
+
 class MetaNil(type):
     """Just here to display Nil nicely"""
     def __str__(self):
@@ -16,19 +20,19 @@ class MetaNil(type):
 
 class Nil(metaclass=MetaNil):
     """The empty leaf node"""
-    red = False
+    color = BLACK
 
 
 class Node:
     def __init__(self, value, color):
         self.value = value
-        self.red = color == "red"
+        self.color = color
         self.left = Nil
         self.right = Nil
         self.parent = None
 
     def __str__(self):
-        return f"{str(self.value).zfill(3)} {'red' if self.red else 'black'}"
+        return f"{str(self.value).zfill(3)} {'red' if self.color == RED else 'black'}"
 
 
 class RedBlackTree:
@@ -70,19 +74,16 @@ class RedBlackTree:
         new_top.right = old_top
         old_top.parent = new_top
 
-    def search(self):
-        pass
-
     def insert(self, value):
         """
         1. Insert a new node and color it red
         2. Rotate and recolor
         """
-        new = Node(value, "red")
+        new = Node(value, RED)
 
         # first scenario
         if not self.root:
-            new.red = False
+            new.color = BLACK
             self.root = new
             return
 
@@ -130,43 +131,44 @@ class RedBlackTree:
                   node         node
         """
 
-        while new_node != self.root and new_node.parent.red:
+        while new_node != self.root and new_node.parent.color == RED:
             if new_node.parent == new_node.parent.parent.right:
                 uncle = new_node.parent.parent.left
-                if uncle.red:  # case 2
-                    uncle.red = False
-                    new_node.parent.red = False
-                    new_node.parent.parent.red = True
+                if uncle.color == RED:  # case 2
+                    uncle.color = BLACK
+                    new_node.parent.color = BLACK
+                    new_node.parent.parent.color = RED
                     new_node = new_node.parent.parent
                 else:
                     if new_node == new_node.parent.left:      #  ‾|
                         new_node = new_node.parent            #    > # case 3.1
                         self.rotate_right(new_node)           #   |
-                    new_node.parent.red = False               #   |  ‾|
-                    new_node.parent.parent.red = True         #   |    > # case 4.1
+                    new_node.parent.color = BLACK             #   |  ‾|
+                    new_node.parent.parent.color = RED        #   |    > # case 4.1
                     self.rotate_left(new_node.parent.parent)  #  _|  _|
             else:
                 uncle = new_node.parent.parent.right
 
-                if uncle.red:  # case 2
-                    uncle.red = False
-                    new_node.parent.red = False
-                    new_node.parent.parent.red = True
+                if uncle.color == RED:  # case 2
+                    uncle.color = BLACK
+                    new_node.parent.color = BLACK
+                    new_node.parent.parent.color = RED
                     new_node = new_node.parent.parent
                 else:
                     if new_node == new_node.parent.right:      #  ‾|
                         new_node = new_node.parent             #    > # case 3.2
                         self.rotate_left(new_node)             #   |
-                    new_node.parent.red = False                #   |  ‾|
-                    new_node.parent.parent.red = True          #   |    > # case 4.2
+                    new_node.parent.color = BLACK                #   |  ‾|
+                    new_node.parent.parent.color = RED          #   |    > # case 4.2
                     self.rotate_right(new_node.parent.parent)  #  _|  _|
-        self.root.red = False
+        self.root.color = BLACK
 
     def display(self, node=None, last=True, header='', index=None):
         elbow = "└──"
         pipe = "│  "
         tee = "├──"
         blank = "   "
+        side = None
         if not node:
             node = self.root
         if index is None:
@@ -180,10 +182,132 @@ class RedBlackTree:
         if node is not Nil:
             children = [node.left, node.right]
             for index, child in enumerate(children):
-                self.display(node=child, header=header + (blank if last else pipe), last=index == len(children) - 1, index=index)
+                self.display(
+                    node=child,
+                    header=header + (blank if last else pipe),
+                    last=index == len(children) - 1,
+                    index=index,
+                )
 
-    def remove(self):
-        pass
+    def delete(self, value):
+        node = self.search(value)
+
+        if node == Nil:
+            return "Key not found!"
+
+        y = node
+        y_orig_color = y.color
+
+        # case 1
+        if node.left == Nil:
+            x = node.right
+            self.transplant(node, node.right)
+        # case 2
+        elif node.right == Nil:
+            x = node.left
+            self.transplant(node, node.left)
+        # case 3
+        else:
+            y = self.minimum(node.right)
+            y_orig_color = y.color
+            x = y.right
+
+            if y.p == node:
+                x.p = y
+            else:
+                self.transplant(y, y.right)
+                y.right = node.right
+                y.right.p = y
+
+            self.transplant(node, y)
+            y.left = node.left
+            y.left.p = y
+            y.color = node.color
+
+        if y_orig_color == BLACK:
+            self.delete_fixup(x)
+
+    # O(logn)
+    def delete_fixup(self, x):
+        while x != self.root and x.color == BLACK:
+            if x == x.p.left:
+                w = x.p.right
+                # type 1
+                if w.color == RED:
+                    w.color = BLACK
+                    x.p.color = RED
+                    self.rotate_left(x.p)
+                    w = x.p.right
+                # type 2
+                if w.left.color == BLACK and w.right.color == BLACK:
+                    w.color = RED
+                    x = x.p
+                else:
+                    # type 3
+                    if w.right.color == BLACK:
+                        w.left.color = BLACK
+                        w.color = RED
+                        self.rotate_right(w)
+                        w = x.p.right
+                    # type 4
+                    w.color = x.p.color
+                    x.p.color = BLACK
+                    w.right.color = BLACK
+                    self.rotate_left(x.p)
+                    x = self.root
+            else:
+                w = x.p.left
+                # type 1
+                if w.color == RED:
+                    w.color = BLACK
+                    x.p.color = RED
+                    self.rotate_right(x.p)
+                    w = x.p.left
+                # type 2
+                if w.right.color == BLACK and w.left.color == BLACK:
+                    w.color = RED
+                    x = x.p
+                else:
+                    # type 3
+                    if w.left.color == BLACK:
+                        w.right.color = BLACK
+                        w.color = RED
+                        self.rotate_left(w)
+                        w = x.p.left
+                    # type 4
+                    w.color = x.p.color
+                    x.p.color = BLACK
+                    w.left.color = BLACK
+                    self.rotate_right(x.p)
+                    x = self.root
+        x.color = BLACK
+
+    # O(1)
+    def transplant(self, u, v):
+        if u.p is None:
+            self.root = v
+        elif u == u.p.left:
+            u.p.left = v
+        else:
+            u.p.right = v
+        v.p = u.p
+
+        # O(h) = O(logn) for RB trees
+
+    def minimum(self, x):
+        while x.left != Nil:
+            x = x.left
+        return x
+
+    # O(h) = O(logn) for RB trees
+    def search(self, k):
+        x = self.root
+        while x != Nil and k != x.key:
+            if k < x.key:
+                x = x.left
+            else:
+                x = x.right
+        return x
 
 
 tree = RedBlackTree()
