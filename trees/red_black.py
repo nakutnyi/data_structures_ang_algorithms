@@ -8,6 +8,7 @@ with a few additional constraints:
 """
 from termcolor import colored
 
+from trees.binary_search import BinarySearchTree
 
 BLACK = True
 RED = False
@@ -37,7 +38,7 @@ class Node:
         return colored(out, "black") if self.color == BLACK else colored(out, "red")
 
 
-class RedBlackTree:
+class RedBlackTree(BinarySearchTree):
     """A kind of self-balancing binary search tree"""
 
     def __init__(self):
@@ -76,7 +77,7 @@ class RedBlackTree:
         new_top.right = old_top
         old_top.parent = new_top
 
-    def insert(self, value):
+    def insert_and_fixup(self, value):
         """
         1. Insert a new node and color it red
         2. Rotate and recolor
@@ -224,8 +225,8 @@ class RedBlackTree:
             y_orig_color = y.color
             x = y.right
 
-            if y.p == node:
-                x.p = y
+            if y.parent == node:
+                x.parent = y
             else:
                 self.transplant(y, y.right)
                 y.right = node.right
@@ -233,7 +234,7 @@ class RedBlackTree:
 
             self.transplant(node, y)
             y.left = node.left
-            y.left.p = y
+            y.left.parent = y
             y.color = node.color
 
         if y_orig_color == BLACK:
@@ -241,67 +242,67 @@ class RedBlackTree:
 
     def delete_fixup(self, x):
         while x != self.root and x.color == BLACK:
-            if x == x.p.left:
-                w = x.p.right
+            if x == x.parent.left:
+                w = x.parent.right
                 # type 1
                 if w.color == RED:
                     w.color = BLACK
-                    x.p.color = RED
-                    self.rotate_left(x.p)
-                    w = x.p.right
+                    x.parent.color = RED
+                    self.rotate_left(x.parent)
+                    w = x.parent.right
                 # type 2
                 if w.left.color == BLACK and w.right.color == BLACK:
                     w.color = RED
-                    x = x.p
+                    x = x.parent
                 else:
                     # type 3
                     if w.right.color == BLACK:
                         w.left.color = BLACK
                         w.color = RED
                         self.rotate_right(w)
-                        w = x.p.right
+                        w = x.parent.right
                     # type 4
-                    w.color = x.p.color
-                    x.p.color = BLACK
+                    w.color = x.parent.color
+                    x.parent.color = BLACK
                     w.right.color = BLACK
-                    self.rotate_left(x.p)
+                    self.rotate_left(x.parent)
                     x = self.root
             else:
-                w = x.p.left
+                w = x.parent.left
                 # type 1
                 if w.color == RED:
                     w.color = BLACK
-                    x.p.color = RED
-                    self.rotate_right(x.p)
-                    w = x.p.left
+                    x.parent.color = RED
+                    self.rotate_right(x.parent)
+                    w = x.parent.left
                 # type 2
                 if w.right.color == BLACK and w.left.color == BLACK:
                     w.color = RED
-                    x = x.p
+                    x = x.parent
                 else:
                     # type 3
                     if w.left.color == BLACK:
                         w.right.color = BLACK
                         w.color = RED
                         self.rotate_left(w)
-                        w = x.p.left
+                        w = x.parent.left
                     # type 4
-                    w.color = x.p.color
-                    x.p.color = BLACK
+                    w.color = x.parent.color
+                    x.parent.color = BLACK
                     w.left.color = BLACK
-                    self.rotate_right(x.p)
+                    self.rotate_right(x.parent)
                     x = self.root
         x.color = BLACK
 
     # O(1)
-    def transplant(self, u, v):
-        if u.p is None:
-            self.root = v
-        elif u == u.p.left:
-            u.p.left = v
+    def transplant(self, new_node, old_node):
+        if new_node.parent is None:
+            self.root = old_node
+        elif new_node == new_node.parent.left:
+            new_node.parent.left = old_node
         else:
-            u.p.right = v
-        v.p = u.p
+            new_node.parent.right = old_node
+        old_node.parent = new_node.parent
 
     @staticmethod
     def minimum(node):
@@ -320,11 +321,14 @@ class RedBlackTree:
 
 
 tree = RedBlackTree()
-tree.insert(15)
-tree.insert(5)
-tree.insert(1)
-tree.insert(2)
-tree.insert(4)
-tree.insert(7)
-tree.insert(10)
+tree.insert_and_fixup(15)
+tree.insert_and_fixup(5)
+tree.insert_and_fixup(1)
+tree.insert_and_fixup(2)
+tree.insert_and_fixup(4)
+tree.insert_and_fixup(7)
+tree.insert_and_fixup(10)
+tree.display()
+
+tree.delete(5)
 tree.display()
