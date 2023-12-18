@@ -8,7 +8,7 @@ with a few additional constraints:
 """
 from termcolor import colored
 
-from trees.binary_search import BinarySearchTree
+from binary_search import BinarySearchTree
 
 BLACK = True
 RED = False
@@ -203,6 +203,12 @@ class RedBlackTree(BinarySearchTree):
                 )
 
     def delete(self, value):
+        """
+        Cases:
+        1. Left child is Nil
+        2. Right child is Nil
+        3. Neither of children is Nil
+        """
         node = self.search(value)
 
         if node == Nil:
@@ -309,15 +315,6 @@ class RedBlackTree(BinarySearchTree):
         while node.left is not Nil:
             node = node.left
         return node
-
-    def search(self, value):
-        current_node = self.root
-        while current_node is not Nil and value != current_node.value:
-            if value < current_node.value:
-                current_node = current_node.left
-            else:
-                current_node = current_node.right
-        return current_node
 
 
 tree = RedBlackTree()
